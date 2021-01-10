@@ -1,5 +1,6 @@
 from jikanpy import Jikan
 from pyrogram import filters
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from bot.utils import text_shortner
 from bot import EMILIA
 
@@ -25,17 +26,30 @@ def data_from_id(mal_id):
         genre = [item["name"] for item in data["genres"]]
         studios = [item["name"] for item in data["studios"]]
 
-        text = f"**Title:** `{title}`\n**JP Title:** `{title_jap}`\n**ENG Title:** `{title_eng}`\n**Type:** `{_type}`\n**Episodes:** `{episodes}`\n**Duration:** `{duration}`\n**Premiered:** `{premiered}`\n**Status:** `{status}`\n**Rating:** `{rating}`\n**Score:** `{score}`⭐\n**Genre:** `{', '.join(genre)}`\n**Studios:** `{', '.join(studios)}`\n\n**Description:** {description}"
+        text = f"**Title:** `{title}`\n**JP Title:** `{title_jap}`\n**ENG Title:** `{title_eng}`\n**Type:** `{_type}`\n**Episodes:** `{episodes}`\n**Duration:** `{duration}`\n**Premiered:** `{premiered}`\n**Status:** `{status}`\n**Rating:** `{rating}`\n**Score:** `{score}` ⭐\n**Genre:** `{', '.join(genre)}`\n**Studios:** `{', '.join(studios)}`\n\n**Description:** {description}"
 
         return text, mal_url, thumb, trailer
     except Exception as e:
         return e
 
 @EMILIA.on_message(filters.command(["mal_id"], prefixes = "/") & ~filters.edited)
-def get_via_id(client, message):
-    mal_id = message.text.split()[-1]
+async def get_via_id(client, message):
+    query = message.text.split()
+    if len(query) < 2:
+        text = "No ID found.\nExample:\n<b>/mal_id 2167</b>"
+        await EMILIA.send_message(chat_id = message.chat.id, text = text, parse_mode = "html")
+        return
     try:
+        mal_id = query[-1]
         caption, mal_url, thumb, trailer = data_from_id(mal_id)
-        EMILIA.send_photo(chat_id = message.chat.id, photo = thumb, caption = caption, parse_mode = "markdown")
+        if trailer:
+            buttons = [
+                        [InlineKeyboardButton("More Info!", url = mal_url), InlineKeyboardButton("Watch Trailer!", url = trailer)]
+                        ]
+        else:
+            buttons = [
+                        [InlineKeyboardButton("More Info!", url = mal_url)]
+                        ]
+        await EMILIA.send_photo(chat_id = message.chat.id, photo = thumb, caption = caption, parse_mode = "markdown", reply_markup = InlineKeyboardMarkup(buttons))
     except Exception as e:
-        EMILIA.send_message(chat_id = message.chat.id, text = e)
+        await EMILIA.send_message(chat_id = message.chat.id, text = e)
