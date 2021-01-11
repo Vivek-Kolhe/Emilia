@@ -7,6 +7,7 @@ from bot import EMILIA
 jikan = Jikan()
 
 def data_from_id(category, mal_id):                             # category: anime or manga
+    # data = jikan.anime(mal_id)
     try:
         if category == "manga_id":
             data = jikan.manga(mal_id)
@@ -85,5 +86,28 @@ async def get_manga_via_id(client, message):
         caption, mal_url, thumb = data_from_id(category, mal_id)
         buttons = [[InlineKeyboardButton("More Info!", url = mal_url)]]
         await EMILIA.send_photo(chat_id = message.chat.id, photo = thumb, caption = caption, parse_mode = "markdown", reply_markup = InlineKeyboardMarkup(buttons))
+    except Exception as e:
+        await EMILIA.send_message(chat_id = message.chat.id, text = e)
+
+@EMILIA.on_message(filters.command(["schedule"], prefixes = "/") & ~filters.edited)
+async def schedule(client, message):
+    query = message.text.split()
+    if len(query) < 2:
+        text = "You forgot to mention day!\nExample:\n**/schedule monday**"
+        await EMILIA.send_message(chat_id = message.chat.id, text = text, parse_mode = "markdown")
+        return
+    try:
+        data = jikan.schedule(day = query[-1].lower())
+        data = data[query[-1].lower()]
+        SCHEDULE_TEXT = f"**Schedule for {query[-1].title()}**\n\n"
+        
+        for i in range(len(data)):
+            title = data[i]["title"]
+            time = data[i]["airing_start"].split("T")[-1][:8] + " UTC"
+            SCHEDULE_TEXT += f"● `{title}` | `{time}`\n"
+        SCHEDULE_TEXT += "\n**Source:** MAL"
+
+        await EMILIA.send_message(chat_id = message.chat.id, text = SCHEDULE_TEXT, parse_mode = "markdown")
+    
     except Exception as e:
         await EMILIA.send_message(chat_id = message.chat.id, text = e)
