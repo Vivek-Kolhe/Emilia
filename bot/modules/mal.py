@@ -7,7 +7,6 @@ from bot import EMILIA
 jikan = Jikan()
 
 def data_from_id(category, mal_id):                             # category: anime or manga
-    # data = jikan.anime(mal_id)
     try:
         if category == "manga_id":
             data = jikan.manga(mal_id)
@@ -49,6 +48,22 @@ def data_from_id(category, mal_id):                             # category: anim
 
             text = f"**MAL ID:** `{_id}`\n**Title:** `{title}`\n**JP Title:** `{title_jap}`\n**ENG Title:** `{title_eng}`\n**Type:** `{_type}`\n**Episodes:** `{episodes}`\n**Duration:** `{duration}`\n**Premiered:** `{premiered}`\n**Status:** `{status}`\n**Rating:** `{rating}`\n**Score:** `{score}` ⭐\n**Genre:** `{', '.join(genre)}`\n**Studio:** `{', '.join(studios)}`\n\n**Description:** {description}"
             return text, mal_url, thumb, trailer
+        
+        elif category == "char_id":
+            data = jikan.character(mal_id)
+            _id = mal_id
+            mal_url = data["url"]
+            name = data["name"]
+            if data["nicknames"]:
+                nicknames = ", ".join(data["nicknames"])
+            else:
+                nicknames = None
+            description = text_shortner.make_short(data["about"], mal_url).replace("\\n", "\n").replace("\n", "")
+            thumb = data["image_url"]
+            anime = [item["name"] for item in data["animeography"]]
+
+            text = f"**MAL ID:** `{_id}`\n**Name:** `{name}`\n**Nicknames:** `{nicknames}`\n**Anime:** `{', '.join(anime)}`\n\n**About:** {description}"
+            return text, mal_url, thumb
     except Exception as e:
         return e
 
@@ -79,6 +94,21 @@ async def get_manga_via_id(client, message):
     query = message.text.split()
     if len(query) < 2:
         text = "No ID found.\nExample:\n<b>/manga_id 2167</b>"
+        await EMILIA.send_message(chat_id = message.chat.id, text = text, parse_mode = "html")
+        return
+    try:
+        category, mal_id = query[0][1:], query[-1]
+        caption, mal_url, thumb = data_from_id(category, mal_id)
+        buttons = [[InlineKeyboardButton("More Info!", url = mal_url)]]
+        await EMILIA.send_photo(chat_id = message.chat.id, photo = thumb, caption = caption, parse_mode = "markdown", reply_markup = InlineKeyboardMarkup(buttons))
+    except Exception as e:
+        await EMILIA.send_message(chat_id = message.chat.id, text = e)
+
+@EMILIA.on_message(filters.command(["char_id"], prefixes = "/") & ~filters.edited)
+async def get_char_via_id(client, message):
+    query = message.text.split()
+    if len(query) < 2:
+        text = "No ID found.\nExample:\n<b>/char_id 2167</b>"
         await EMILIA.send_message(chat_id = message.chat.id, text = text, parse_mode = "html")
         return
     try:
