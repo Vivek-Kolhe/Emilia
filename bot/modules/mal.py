@@ -6,7 +6,7 @@ from bot import EMILIA
 
 jikan = Jikan()
 
-def data_from_id(category, mal_id):                             # category: anime or manga
+def data_from_id(category, mal_id):                             # category: anime or manga or character
     try:
         if category == "manga_id":
             data = jikan.manga(mal_id)
@@ -115,6 +115,28 @@ async def get_char_via_id(client, message):
         category, mal_id = query[0][1:], query[-1]
         caption, mal_url, thumb = data_from_id(category, mal_id)
         buttons = [[InlineKeyboardButton("More Info!", url = mal_url)]]
+        await EMILIA.send_photo(chat_id = message.chat.id, photo = thumb, caption = caption, parse_mode = "markdown", reply_markup = InlineKeyboardMarkup(buttons))
+    except Exception as e:
+        await EMILIA.send_message(chat_id = message.chat.id, text = e)
+
+@EMILIA.on_message(filters.command(["anime"], prefixes = "/") & ~filters.edited)
+async def get_anime(client, message):
+    query = message.text.split(maxsplit = 1)
+    if len(query) < 2:
+        await EMILIA.send_message(chat_id = message.chat.id, text = "No search found!\nExample:\n**/anime clannad**", parse_mode = "markdown")
+        return
+    try:
+        temp = jikan.search("anime", query[-1])
+        mal_id = temp["results"][0]["mal_id"]
+        caption, mal_url, thumb, trailer = data_from_id("anime_id", mal_id)
+        if trailer:
+            buttons = [
+                        [InlineKeyboardButton("More Info!", url = mal_url), InlineKeyboardButton("Watch Trailer!", url = trailer)]
+                        ]
+        else:
+            buttons = [
+                        [InlineKeyboardButton("More Info!", url = mal_url)]
+                        ]
         await EMILIA.send_photo(chat_id = message.chat.id, photo = thumb, caption = caption, parse_mode = "markdown", reply_markup = InlineKeyboardMarkup(buttons))
     except Exception as e:
         await EMILIA.send_message(chat_id = message.chat.id, text = e)
