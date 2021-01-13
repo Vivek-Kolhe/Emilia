@@ -141,6 +141,21 @@ async def get_anime(client, message):
     except Exception as e:
         await EMILIA.send_message(chat_id = message.chat.id, text = e)
 
+@EMILIA.on_message(filters.command(["manga"], prefixes = "/") & ~filters.edited)
+async def get_manga(client, message):
+    query = message.text.split(maxsplit = 1)
+    if len(query) < 2:
+        await EMILIA.send_message(chat_id = message.chat.id, text = "No search found!\nExample:\n**/manga fairy tail**", parse_mode = "markdown")
+        return
+    try:
+        temp = jikan.search("manga", query[-1])
+        mal_id = temp["results"][0]["mal_id"]
+        caption, mal_url, thumb = data_from_id("manga_id", mal_id)
+        buttons = [[InlineKeyboardButton("More Info!", url = mal_url)]]
+        await EMILIA.send_photo(chat_id = message.chat.id, photo = thumb, caption = caption, parse_mode = "markdown", reply_markup = InlineKeyboardMarkup(buttons))
+    except Exception as e:
+        await EMILIA.send_message(chat_id = message.chat.id, text = e)
+
 @EMILIA.on_message(filters.command(["schedule"], prefixes = "/") & ~filters.edited)
 async def schedule(client, message):
     query = message.text.split()
