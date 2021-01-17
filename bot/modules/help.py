@@ -22,5 +22,5 @@ async def help(client, message):
 async def info(client, message):
     buttons = [
                 [InlineKeyboardButton("Source", url = "https://github.com/Vivek-Kolhe/Emilia"), InlineKeyboardButton("Report", url = "https://t.me/pookie_0_0")]
-                ]
+              ]
     await EMILIA.send_message(chat_id = message.chat.id, text = INFO_TEXT, reply_markup = InlineKeyboardMarkup(buttons))
