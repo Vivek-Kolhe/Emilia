@@ -1,14 +1,11 @@
-from jikanpy import Jikan
 from pyrogram import filters
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from bot.utils import text_shortner
-from bot import EMILIA
-
-jikan = Jikan()
+from bot import EMILIA, jikan
 
 def data_from_id(category, mal_id):                             # category: anime or manga or character
     try:
-        if category == "manga_id":
+        if category == "manga":
             data = jikan.manga(mal_id)
             _id = mal_id
             mal_url = data["url"]
@@ -20,14 +17,14 @@ def data_from_id(category, mal_id):                             # category: anim
             chapters = data["chapters"]
             status = data["status"]
             score = data["score"]
-            description = text_shortner.make_short(data["synopsis"], mal_url)
+            description = text_shortner.make_short(data["synopsis"], thumb, mal_url)
             genre = [item["name"] for item in data["genres"]]
             authors = [item["name"] for item in data["authors"]]
 
             text = f"**MAL ID:** `{_id}`\n**Title:** `{title}`\n**JP Title:** `{title_jap}`\n**ENG Title:** `{title_eng}`\n**Type:** `{_type}`\n**Volumes:** `{volumes}`\n**Chapters:** `{chapters}`\n**Authors:** `{'; '.join(authors)}`\n**Status:** `{status}`\n**Score:** `{score}` ⭐\n**Genre:** `{', '.join(genre)}`\n\n**Description:** {description}"
-            return text, mal_url, thumb
+            return text, mal_url
         
-        elif category == "anime_id":
+        elif category == "anime":
             data = jikan.anime(mal_id)
             _id = mal_id
             mal_url = data["url"]
@@ -42,139 +39,67 @@ def data_from_id(category, mal_id):                             # category: anim
             rating = data["rating"]
             score = data["score"]
             premiered = data["premiered"]
-            description = text_shortner.make_short(data["synopsis"], mal_url)
+            description = text_shortner.make_short(data["synopsis"], thumb, mal_url)
             genre = [item["name"] for item in data["genres"]]
             studios = [item["name"] for item in data["studios"]]
 
             text = f"**MAL ID:** `{_id}`\n**Title:** `{title}`\n**JP Title:** `{title_jap}`\n**ENG Title:** `{title_eng}`\n**Type:** `{_type}`\n**Episodes:** `{episodes}`\n**Duration:** `{duration}`\n**Premiered:** `{premiered}`\n**Status:** `{status}`\n**Rating:** `{rating}`\n**Score:** `{score}` ⭐\n**Genre:** `{', '.join(genre)}`\n**Studio:** `{', '.join(studios)}`\n\n**Description:** {description}"
-            return text, mal_url, thumb, trailer
+            return text, mal_url, trailer
         
-        elif category == "char_id":
+        elif category == "char":
             data = jikan.character(mal_id)
             _id = mal_id
             mal_url = data["url"]
+            thumb = data["image_url"]
             name = data["name"]
             if data["nicknames"]:
                 nicknames = ", ".join(data["nicknames"])
             else:
                 nicknames = None
-            description = text_shortner.make_short(data["about"], mal_url).replace("\\n", "\n").replace("\n", "")
-            thumb = data["image_url"]
+            description = text_shortner.make_short(data["about"], thumb, mal_url).replace("\\n", "\n").replace("\n", "")
             anime = [item["name"] for item in data["animeography"]]
 
             text = f"**MAL ID:** `{_id}`\n**Name:** `{name}`\n**Nicknames:** `{nicknames}`\n**Anime:** `{', '.join(anime)}`\n\n**About:** {description}"
-            return text, mal_url, thumb
+            return text, mal_url
     except Exception as e:
         return e
 
-@EMILIA.on_message(filters.command(["anime_id"], prefixes = "/") & ~filters.edited)
-async def get_anime_via_id(client, message):
-    query = message.text.split()
-    if len(query) < 2:
-        text = "No ID found.\nExample:\n<b>/anime_id 2167</b>"
-        await EMILIA.send_message(chat_id = message.chat.id, text = text, parse_mode = "html")
+@EMILIA.on_message(filters.command(["mal_id"], prefixes = "/") & ~filters.edited)
+async def mal(client, message):
+    query = message.text.split(maxsplit = 2)
+    if len(query) < 3:
+        text = "No ID or category found!\n**Format:** `/mal_id <category> <query>`"
+        await EMILIA.send_message(chat_id = message.chat.id, text = text, parse_mode = "markdown")
         return
-    try:
-        category, mal_id = query[0][1:], query[-1]
-        caption, mal_url, thumb, trailer = data_from_id(category, mal_id)
-        if trailer:
-            buttons = [
-                        [InlineKeyboardButton("More Info!", url = mal_url), InlineKeyboardButton("Watch Trailer!", url = trailer)]
-                        ]
-        else:
-            buttons = [
-                        [InlineKeyboardButton("More Info!", url = mal_url)]
-                        ]
-        await EMILIA.send_photo(chat_id = message.chat.id, photo = thumb, caption = caption, parse_mode = "markdown", reply_markup = InlineKeyboardMarkup(buttons))
-    except Exception as e:
-        await EMILIA.send_message(chat_id = message.chat.id, text = e)
-
-@EMILIA.on_message(filters.command(["manga_id"], prefixes = "/") & ~filters.edited)
-async def get_manga_via_id(client, message):
-    query = message.text.split()
-    if len(query) < 2:
-        text = "No ID found.\nExample:\n<b>/manga_id 2167</b>"
-        await EMILIA.send_message(chat_id = message.chat.id, text = text, parse_mode = "html")
-        return
-    try:
-        category, mal_id = query[0][1:], query[-1]
-        caption, mal_url, thumb = data_from_id(category, mal_id)
-        buttons = [[InlineKeyboardButton("More Info!", url = mal_url)]]
-        await EMILIA.send_photo(chat_id = message.chat.id, photo = thumb, caption = caption, parse_mode = "markdown", reply_markup = InlineKeyboardMarkup(buttons))
-    except Exception as e:
-        await EMILIA.send_message(chat_id = message.chat.id, text = e)
-
-@EMILIA.on_message(filters.command(["char_id"], prefixes = "/") & ~filters.edited)
-async def get_char_via_id(client, message):
-    query = message.text.split()
-    if len(query) < 2:
-        text = "No ID found.\nExample:\n<b>/char_id 2167</b>"
-        await EMILIA.send_message(chat_id = message.chat.id, text = text, parse_mode = "html")
-        return
-    try:
-        category, mal_id = query[0][1:], query[-1]
-        caption, mal_url, thumb = data_from_id(category, mal_id)
-        buttons = [[InlineKeyboardButton("More Info!", url = mal_url)]]
-        await EMILIA.send_photo(chat_id = message.chat.id, photo = thumb, caption = caption, parse_mode = "markdown", reply_markup = InlineKeyboardMarkup(buttons))
-    except Exception as e:
-        await EMILIA.send_message(chat_id = message.chat.id, text = e)
-
-@EMILIA.on_message(filters.command(["anime"], prefixes = "/") & ~filters.edited)
-async def get_anime(client, message):
-    query = message.text.split(maxsplit = 1)
-    if len(query) < 2:
-        await EMILIA.send_message(chat_id = message.chat.id, text = "No search found!\nExample:\n**/anime clannad**", parse_mode = "markdown")
-        return
-    try:
-        temp = jikan.search("anime", query[-1])
-        mal_id = temp["results"][0]["mal_id"]
-        caption, mal_url, thumb, trailer = data_from_id("anime_id", mal_id)
-        if trailer:
-            buttons = [
-                        [InlineKeyboardButton("More Info!", url = mal_url), InlineKeyboardButton("Watch Trailer!", url = trailer)]
-                        ]
-        else:
-            buttons = [
-                        [InlineKeyboardButton("More Info!", url = mal_url)]
-                        ]
-        await EMILIA.send_photo(chat_id = message.chat.id, photo = thumb, caption = caption, parse_mode = "markdown", reply_markup = InlineKeyboardMarkup(buttons))
-    except Exception as e:
-        await EMILIA.send_message(chat_id = message.chat.id, text = e)
-
-@EMILIA.on_message(filters.command(["manga"], prefixes = "/") & ~filters.edited)
-async def get_manga(client, message):
-    query = message.text.split(maxsplit = 1)
-    if len(query) < 2:
-        await EMILIA.send_message(chat_id = message.chat.id, text = "No search found!\nExample:\n**/manga fairy tail**", parse_mode = "markdown")
-        return
-    try:
-        temp = jikan.search("manga", query[-1])
-        mal_id = temp["results"][0]["mal_id"]
-        caption, mal_url, thumb = data_from_id("manga_id", mal_id)
-        buttons = [[InlineKeyboardButton("More Info!", url = mal_url)]]
-        await EMILIA.send_photo(chat_id = message.chat.id, photo = thumb, caption = caption, parse_mode = "markdown", reply_markup = InlineKeyboardMarkup(buttons))
-    except Exception as e:
-        await EMILIA.send_message(chat_id = message.chat.id, text = e)
-
-@EMILIA.on_message(filters.command(["schedule"], prefixes = "/") & ~filters.edited)
-async def schedule(client, message):
-    query = message.text.split()
-    if len(query) < 2:
-        text = "You forgot to mention day!\nExample:\n**/schedule monday**"
+    if query[1] not in ["anime", "manga", "char"]:
+        text = "Invalid category!\n**Categories:** anime, manga, char"
         await EMILIA.send_message(chat_id = message.chat.id, text = text, parse_mode = "markdown")
         return
     try:
-        data = jikan.schedule(day = query[-1].lower())
-        data = data[query[-1].lower()]
-        SCHEDULE_TEXT = f"**Schedule for {query[-1].title()}**\n\n"
+        if query[1] == "anime":
+            text, mal_url, trailer = data_from_id("anime", query[-1])
+            if trailer:
+                buttons = [
+                            [InlineKeyboardButton("More Info!", url = mal_url), InlineKeyboardButton("Watch Trailer!", url = trailer)]
+                          ]
+            else:
+                buttons = [
+                            [InlineKeyboardButton("More Info!", url = mal_url)]
+                          ]
+            await EMILIA.send_message(chat_id = message.chat.id, text = text, parse_mode = "markdown", disable_web_page_preview = False, reply_markup = InlineKeyboardMarkup(buttons))
         
-        for i in range(len(data)):
-            title = data[i]["title"]
-            time = data[i]["airing_start"].split("T")[-1][:8] + " UTC"
-            SCHEDULE_TEXT += f"● `{title}` | `{time}`\n"
-        SCHEDULE_TEXT += "\n**Source:** MAL"
-
-        await EMILIA.send_message(chat_id = message.chat.id, text = SCHEDULE_TEXT, parse_mode = "markdown")
-    
+        elif query[1] == "manga":
+            text, mal_url = data_from_id("manga", query[-1])
+            buttons = [
+                        [InlineKeyboardButton("More Info!", url = mal_url)]
+                      ]
+            await EMILIA.send_message(chat_id = message.chat.id, text = text, parse_mode = "markdown", disable_web_page_preview = False, reply_markup = InlineKeyboardMarkup(buttons))
+        
+        elif query[1] == "char":
+            text, mal_url = data_from_id("char", query[-1])
+            buttons = [
+                        [InlineKeyboardButton("More Info!", url = mal_url)]
+                      ]
+            await EMILIA.send_message(chat_id = message.chat.id, text = text, parse_mode = "markdown", disable_web_page_preview = False, reply_markup = InlineKeyboardMarkup(buttons))
     except Exception as e:
-        await EMILIA.send_message(chat_id = message.chat.id, text = e)
+        await EMILIA.send_message(chat_id = message.chat.id, text = f"Error:\n{e}")
