@@ -1,5 +1,5 @@
 from pyrogram import filters
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
 from bot.utils import text_shortner
 from bot import EMILIA, jikan
 
@@ -56,7 +56,7 @@ def data_from_id(category, mal_id):                             # category: anim
                 nicknames = ", ".join(data["nicknames"])
             else:
                 nicknames = None
-            description = text_shortner.make_short(data["about"], thumb, mal_url).replace("\\n", "\n").replace("\n", "")
+            description = text_shortner.make_short(data["about"], thumb, mal_url).replace("\r", "").replace("\\n", "").replace("\n\n\n", "\n").replace("\n\n", "\n")
             anime = [item["name"] for item in data["animeography"]]
 
             text = f"**MAL ID:** `{_id}`\n**Name:** `{name}`\n**Nicknames:** `{nicknames}`\n**Anime:** `{', '.join(anime)}`\n\n**About:** {description}"
@@ -66,40 +66,35 @@ def data_from_id(category, mal_id):                             # category: anim
 
 @EMILIA.on_message(filters.command(["mal_id"], prefixes = "/") & ~filters.edited)
 async def mal(client, message):
-    query = message.text.split(maxsplit = 2)
-    if len(query) < 3:
-        text = "No ID or category found!\n**Format:** `/mal_id <category> <query>`"
+    query = message.text.split(maxsplit = 1)
+    if len(query) < 2:
+        text = "No ID found!"
         await EMILIA.send_message(chat_id = message.chat.id, text = text, parse_mode = "markdown")
         return
-    if query[1] not in ["anime", "manga", "char"]:
-        text = "Invalid category!\n**Categories:** anime, manga, char"
-        await EMILIA.send_message(chat_id = message.chat.id, text = text, parse_mode = "markdown")
-        return
-    try:
-        if query[1] == "anime":
-            text, mal_url, trailer = data_from_id("anime", query[-1])
-            if trailer:
-                buttons = [
-                            [InlineKeyboardButton("More Info!", url = mal_url), InlineKeyboardButton("Watch Trailer!", url = trailer)]
-                          ]
-            else:
-                buttons = [
-                            [InlineKeyboardButton("More Info!", url = mal_url)]
-                          ]
-            await EMILIA.send_message(chat_id = message.chat.id, text = text, parse_mode = "markdown", disable_web_page_preview = False, reply_markup = InlineKeyboardMarkup(buttons))
-        
-        elif query[1] == "manga":
-            text, mal_url = data_from_id("manga", query[-1])
+
+    buttons = [
+                [InlineKeyboardButton("Anime", f"anime {query[-1]}"), InlineKeyboardButton("Manga", f"manga {query[-1]}"), InlineKeyboardButton("Character", f"char {query[-1]}")]
+              ]
+    text = "What are you looking for?"
+    await EMILIA.send_message(chat_id = message.chat.id, text = text, reply_markup = InlineKeyboardMarkup(buttons))
+
+@EMILIA.on_callback_query()
+async def c_mal_id(client, CallbackQuery):
+    query = CallbackQuery.data.split()
+    if query[0] == "anime":
+        text, mal_url, trailer = data_from_id(query[0], query[-1])
+        if trailer:
+            buttons = [
+                        [InlineKeyboardButton("More Info!", url = mal_url), InlineKeyboardButton("Watch Trailer!", url = trailer)]
+                      ]
+        else:
             buttons = [
                         [InlineKeyboardButton("More Info!", url = mal_url)]
                       ]
-            await EMILIA.send_message(chat_id = message.chat.id, text = text, parse_mode = "markdown", disable_web_page_preview = False, reply_markup = InlineKeyboardMarkup(buttons))
-        
-        elif query[1] == "char":
-            text, mal_url = data_from_id("char", query[-1])
-            buttons = [
-                        [InlineKeyboardButton("More Info!", url = mal_url)]
-                      ]
-            await EMILIA.send_message(chat_id = message.chat.id, text = text, parse_mode = "markdown", disable_web_page_preview = False, reply_markup = InlineKeyboardMarkup(buttons))
-    except Exception as e:
-        await EMILIA.send_message(chat_id = message.chat.id, text = f"Error:\n{e}")
+        await CallbackQuery.edit_message_text(text = text, reply_markup = InlineKeyboardMarkup(buttons))
+    else:
+        text, mal_url = data_from_id(query[0], query[-1])
+        buttons = [
+                    [InlineKeyboardButton("More Info!", url = mal_url)]
+                  ]
+        await CallbackQuery.edit_message_text(text = text, reply_markup = InlineKeyboardMarkup(buttons))
