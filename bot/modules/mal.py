@@ -11,7 +11,7 @@ def data_from_id(category, mal_id):                             # category: anim
             mal_url = data["url"]
             thumb = data["image_url"]
             title = data["title"]
-            title_eng, title_jap = data["title_english"], data["title_japanese"]
+            title_jap = data["title_japanese"]
             _type = data["type"]
             volumes = data["volumes"]
             chapters = data["chapters"]
@@ -21,7 +21,7 @@ def data_from_id(category, mal_id):                             # category: anim
             genre = [item["name"] for item in data["genres"]]
             authors = [item["name"] for item in data["authors"]]
 
-            text = f"**MAL ID:** `{_id}`\n**Title:** `{title}`\n**JP Title:** `{title_jap}`\n**ENG Title:** `{title_eng}`\n**Type:** `{_type}`\n**Volumes:** `{volumes}`\n**Chapters:** `{chapters}`\n**Authors:** `{'; '.join(authors)}`\n**Status:** `{status}`\n**Score:** `{score}` ⭐\n**Genre:** `{', '.join(genre)}`\n\n**Description:** {description}"
+            text = f"**{title} ({title_jap})**\n\n**MAL ID:** `{_id}`\n**Type:** `{_type}`\n**Volumes:** `{volumes}`\n**Chapters:** `{chapters}`\n**Authors:** `{'; '.join(authors)}`\n**Status:** `{status}`\n**Score:** `{score}` ⭐\n**Genre:** `{', '.join(genre)}`\n\n**Description:** {description}"
             return text, mal_url
         
         elif category == "anime":
@@ -31,7 +31,7 @@ def data_from_id(category, mal_id):                             # category: anim
             thumb = data["image_url"]
             trailer = data["trailer_url"]
             title = data["title"]
-            title_eng, title_jap = data["title_english"], data["title_japanese"]
+            title_jap = data["title_japanese"]
             _type = data["type"]
             episodes = data["episodes"]
             duration = data["duration"]
@@ -43,7 +43,7 @@ def data_from_id(category, mal_id):                             # category: anim
             genre = [item["name"] for item in data["genres"]]
             studios = [item["name"] for item in data["studios"]]
 
-            text = f"**MAL ID:** `{_id}`\n**Title:** `{title}`\n**JP Title:** `{title_jap}`\n**ENG Title:** `{title_eng}`\n**Type:** `{_type}`\n**Episodes:** `{episodes}`\n**Duration:** `{duration}`\n**Premiered:** `{premiered}`\n**Status:** `{status}`\n**Rating:** `{rating}`\n**Score:** `{score}` ⭐\n**Genre:** `{', '.join(genre)}`\n**Studio:** `{', '.join(studios)}`\n\n**Description:** {description}"
+            text = f"**{title} ({title_jap})**\n\n**MAL ID:** `{_id}`\n**Type:** `{_type}`\n**Episodes:** `{episodes}`\n**Duration:** `{duration}`\n**Premiered:** `{premiered}`\n**Status:** `{status}`\n**Rating:** `{rating}`\n**Score:** `{score}` ⭐\n**Genre:** `{', '.join(genre)}`\n**Studio:** `{', '.join(studios)}`\n\n**Description:** {description}"
             return text, mal_url, trailer
         
         elif category == "char":
