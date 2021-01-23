@@ -40,7 +40,7 @@ async def get_manga(client, message):
             except:
                 break
 
-        text = f"Search results for `{`query[-1]}`:"
+        text = f"Search results for `{query[-1]}`:"
         await EMILIA.send_message(chat_id = message.chat.id, text = text, reply_markup = InlineKeyboardMarkup(buttons))
     except Exception as e:
         await EMILIA.send_message(chat_id = message.chat.id, text = f"Error:\n{e}")
