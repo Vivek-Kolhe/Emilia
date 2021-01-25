@@ -25,7 +25,7 @@ A telegram bot to fetch anime, manga, character info from [MAL](https://myanimel
 | ```/schedule <day>``` | Returns airing schedule. |
 
 ## Set Up
-Clone and download the repository. Install above listed dependencies and put your *crdentials* in ***config.py***.\
+Clone and download the repository. Install above listed dependencies and put your *credentials* in ***config.py***.\
 Run the bot using ```python3 -m bot```.
 
 ## Deploying on Heroku
