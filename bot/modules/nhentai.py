@@ -1,30 +1,56 @@
-import requests
-import wget
-from bs4 import BeautifulSoup
+import aiohttp
+from bot import EMILIA
+from pyrogram import filters
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
 
-def nhentai_data(_id):
-    url = f"https://nhentai.net/g/{_id}/"
-    response = requests.get(url)
-    soup = BeautifulSoup(response.content, "lxml")
+async def nhentai_data(_id):
+    url = f"https://nhentai.net/api/gallery/{_id}"
 
-    title = soup.find("h1", class_ = "title").text
-    section_tags = soup.find_all(id = "tags")
-    divs = section_tags[0].find_all("div")
-    tags = divs[2].find_all("span", class_ = "name")
-    tags = [item.text for item in tags]
-    artist = divs[3].find("span", class_ = "name").text
-    pages = divs[7].find("span", class_ = "name").text
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            data = await response.json()
 
-    some_id = soup.find("div", class_ = "thumb-container").find("noscript").find("img")["src"].split("/")[-2]
-    BASE_IMG_URL = "https://i.nhentai.net/galleries/{}/".format(some_id)
+            title = data["title"]["english"]
+            media_id = data["media_id"]
+            pages = data["images"]["pages"]
+            num_pages = data["num_pages"]
+            all_tags = data["tags"]
+            lang, artist, tags = [], [], []
 
-    for i in range(int(pages)):
-        url = BASE_IMG_URL + f"{i+1}.jpg"
-        wget.download(url, "E://test")
-    return title, tags, artist, pages
+            for tag in all_tags:
+                if tag["type"] == "tag":
+                    tags.append(f"#{tag['name'].replace(' ', '_').replace('-', '_')}")
+                elif tag["type"] == "language":
+                    lang.append(tag["name"].title())
+                elif tag["type"] == "artist":
+                    artist.append(tag["name"].title()) 
 
-title, tags, artist, pages = nhentai_data(339813)
-print(title)
-print(", ".join(tags))
-print(artist)
-print(pages)
+            BASE_PAGE_IMG = f"https://i.nhentai.net/galleries/{media_id}/"
+            page_links = []
+            img_extensions = {
+                                "j" : "jpg",
+                                "p" : "png",
+                                "g" : "gif"
+                             }
+            
+            for i in range(num_pages):
+                temp_ext = pages[i]["t"]
+                file_url = BASE_PAGE_IMG + f"{i+1}.{img_extensions[temp_ext]}"
+                page_links.append(file_url)
+            
+            return title, num_pages, artist, lang, tags, page_links
+
+@EMILIA.on_message(filters.command(["nhentai"], prefixes = "/") & ~filters.edited)
+async def nhentai(client, message):
+    query = message.text.split()
+    title, num_pages, artist, lang, tags, page_links = await nhentai_data(query[-1])
+
+    buttons = [
+                [
+                    InlineKeyboardButton("Instant Read?", url = "https://nhentai.net"),
+                    InlineKeyboardButton("Download", callback_data = "some")
+                ]
+              ]
+
+    text = f"**{title}**\n\n**Language:** {', '.join(lang)}\n**Artist:** {', '.join(artist)}\n**Pages:** {num_pages}\n\n**Tags:** {', '.join(tags)}"
+    await EMILIA.send_photo(chat_id = message.chat.id, photo = page_links[0], caption = text, reply_markup = InlineKeyboardMarkup(buttons))
