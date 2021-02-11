@@ -1,5 +1,5 @@
 from bot import EMILIA
-from bot.modules import start, help, mal, schedule, search
+from bot.modules import start, help, mal, schedule, search, nhentai
 from pyrogram import filters
 
 if __name__ == "__main__":
