@@ -1,7 +1,9 @@
 import aiohttp
+import wget
+from PIL import Image
 from bot import EMILIA
 from pyrogram import filters
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 async def nhentai_data(_id):
     url = f"https://nhentai.net/api/gallery/{_id}"
@@ -40,17 +42,35 @@ async def nhentai_data(_id):
             
             return title, num_pages, artist, lang, tags, page_links
 
+async def _download(_id, dl_path, outfile_path):
+    title, num_pages, artist, lang, tags, page_links = await nhentai_data(_id)
+    imgs = []
+    for i in range(1, int(num_pages) + 1):
+        wget.download(page_links[i - 1], dl_path)
+        suffix = page_links[i - 1].split(".")[-1]
+        fname = f"{dl_path}//{i}.{suffix}"
+        img = Image.open(fname)
+        if img.mode == "RGBA":
+            img = img.convert("RGB")
+        imgs.append(img)
+    
+    imgs[0].save(outfile_path, save_all = True, quality = 100, append_images = imgs[1:])
+
 @EMILIA.on_message(filters.command(["nhentai"], prefixes = "/") & ~filters.edited)
 async def nhentai(client, message):
-    query = message.text.split()
-    title, num_pages, artist, lang, tags, page_links = await nhentai_data(query[-1])
-
-    buttons = [
-                [
-                    InlineKeyboardButton("Instant Read?", url = "https://nhentai.net"),
-                    InlineKeyboardButton("Download", callback_data = "some")
+    query = message.text.split(maxsplit = 1)
+    if len(query) < 2:
+        await EMILIA.send_message(chat_id = message.chat.id, text = "No nhentai ID found!\nExample:\n**/nhentai 339813**")
+        return
+    
+    try:
+        title, num_pages, artist, lang, tags, page_links = await nhentai_data(query[-1])
+        buttons = [
+                    [
+                        InlineKeyboardButton("Download", callback_data = f"download {query[-1]}")
+                    ]
                 ]
-              ]
-
-    text = f"**{title}**\n\n**Language:** {', '.join(lang)}\n**Artist:** {', '.join(artist)}\n**Pages:** {num_pages}\n\n**Tags:** {', '.join(tags)}"
-    await EMILIA.send_photo(chat_id = message.chat.id, photo = page_links[0], caption = text, reply_markup = InlineKeyboardMarkup(buttons))
+        text = f"**{title}**\n\n**Language:** {', '.join(lang)}\n**Artist:** {', '.join(artist)}\n**Pages:** {num_pages}\n\n**Tags:** {', '.join(tags)}"
+        await EMILIA.send_photo(chat_id = message.chat.id, photo = page_links[0], caption = text, reply_markup = InlineKeyboardMarkup(buttons))
+    except Exception as e:
+        await EMILIA.send_message(chat_id = message.chat.id, text = f"**Error:**\n{e}")
