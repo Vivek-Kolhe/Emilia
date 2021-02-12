@@ -22,4 +22,4 @@ async def schedule(client, message):
         await EMILIA.send_message(chat_id = message.chat.id, text = SCHEDULE_TEXT, parse_mode = "markdown")
     
     except Exception as e:
-        await EMILIA.send_message(chat_id = message.chat.id, text = f"Error:\n{e}")
+        await EMILIA.send_message(chat_id = message.chat.id, text = f"**Error:**\n{e}")
