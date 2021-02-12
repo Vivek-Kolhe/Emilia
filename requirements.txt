@@ -1,2 +1,7 @@
+wget
+Pillow
+img2pdf
+aiohttp
 jikanpy
+tgcrypto
 pyrogram
