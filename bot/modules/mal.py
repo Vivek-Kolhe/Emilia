@@ -68,7 +68,7 @@ def data_from_id(category, mal_id):                             # category: anim
 async def mal(client, message):
     query = message.text.split(maxsplit = 1)
     if len(query) < 2:
-        text = "No ID found!"
+        text = "No ID found!\nExample:\n**/mal_id 1234566**"
         await EMILIA.send_message(chat_id = message.chat.id, text = text, parse_mode = "markdown")
         return
 
@@ -77,24 +77,3 @@ async def mal(client, message):
               ]
     text = "What are you looking for?"
     await EMILIA.send_message(chat_id = message.chat.id, text = text, reply_markup = InlineKeyboardMarkup(buttons))
-
-@EMILIA.on_callback_query()
-async def c_mal_id(client, CallbackQuery):
-    query = CallbackQuery.data.split()
-    if query[0] == "anime":
-        text, mal_url, trailer = data_from_id(query[0], query[-1])
-        if trailer:
-            buttons = [
-                        [InlineKeyboardButton("More Info!", url = mal_url), InlineKeyboardButton("Watch Trailer!", url = trailer)]
-                      ]
-        else:
-            buttons = [
-                        [InlineKeyboardButton("More Info!", url = mal_url)]
-                      ]
-        await CallbackQuery.edit_message_text(text = text, reply_markup = InlineKeyboardMarkup(buttons))
-    else:
-        text, mal_url = data_from_id(query[0], query[-1])
-        buttons = [
-                    [InlineKeyboardButton("More Info!", url = mal_url)]
-                  ]
-        await CallbackQuery.edit_message_text(text = text, reply_markup = InlineKeyboardMarkup(buttons))
