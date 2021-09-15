@@ -1,4 +1,4 @@
-<img src="https://github.com/Vivek-Kolhe/Emilia/blob/main/132658.gif" alt="Emilia" width=5000 />
+<!-- <img src="https://github.com/Vivek-Kolhe/Emilia/blob/main/132658.gif" alt="Emilia" width=5000 /> -->
 
 # Emilia
 A telegram bot to fetch anime, manga, character info from [MAL](https://myanimelist.net/).
